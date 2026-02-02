@@ -1,4 +1,4 @@
-### 👋 Hi there, I'm Akhil Regonda!
+### 👋 Zdravím, já jsem Václav!
 
 ---
 
