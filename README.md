@@ -20,4 +20,4 @@
 
 
 [![GitHub Streak](https://github-readme-streak-stats.herokuapp.com?user=GameFunns98&theme=dark&hide_border=true)](https://git.io/streak-stats)
-[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=GameFunns98)](https://github.com/anuraghazra/github-readme-stats)
+[![My Awesome Stats](https://awesome-github-stats.azurewebsites.net/user-stats/GameFunns98?cardType=level&theme=github-dark&fontFamily=&preferLogin=false)](https://git.io/awesome-stats-card)
