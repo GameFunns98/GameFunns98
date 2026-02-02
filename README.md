@@ -20,6 +20,4 @@
 
 
 [![GitHub Streak](https://github-readme-streak-stats.herokuapp.com?user=GameFunns98&theme=dark&hide_border=true)](https://git.io/streak-stats)
-
-
-![Your GitHub stats](https://github-readme-stats.vercel.app/api?username=GameFunns98&hide_border=true&show_icons=true&bg_color=151515&title_color=fb4362&icon_color=fb4362&text_bold=false&text_color=9e9e9e)
+[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=GameFunns98)](https://github.com/anuraghazra/github-readme-stats)
