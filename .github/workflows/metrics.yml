@@ -45,7 +45,7 @@ jobs:
           output_action: none
 
           token: ${{ secrets.METRICS_TOKEN }}
-          user: GameFunns
+          user: GameFunns98
 
           base: header, activity, community, repositories, metadata
 
@@ -206,15 +206,23 @@ jobs:
           shopt -s nullglob
           files=(/metrics_renders/*.svg)
 
-          if [ ${#files[@]} -eq 0 ]; then
+          if (( ${#files[@]} == 0 )); then
             echo "No SVG files were generated."
             exit 1
           fi
 
-          sudo cp -f "${files[@]}" ./
-          sudo chown "$(id -u):$(id -g)" ./*.svg
+          copied=()
 
-          git add github-metrics.svg music.svg steam.svg personality.svg
+          for file in "${files[@]}"; do
+            filename="$(basename "$file")"
+
+            sudo cp -f "$file" "./$filename"
+            sudo chown "$(id -u):$(id -g)" "./$filename"
+
+            copied+=("$filename")
+          done
+
+          git add -- "${copied[@]}"
 
           if git diff --cached --quiet; then
             echo "Metrics data did not change."
