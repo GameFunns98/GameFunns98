@@ -154,6 +154,7 @@ jobs:
       # ------------------------------------------------------------
 
       - name: Generate personality metrics
+        if: ${{ false }}
         continue-on-error: true
         uses: lowlighter/metrics@latest
         with:
