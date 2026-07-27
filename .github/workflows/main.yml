@@ -1,19 +1,225 @@
-name: Metrics
+name: GitHub Metrics
+
 on:
-  # Schedule daily updates
-  schedule: [{cron: "0 0 * * *"}]
-  # (optional) Run workflow manually
   workflow_dispatch:
-  # (optional) Run workflow when pushing on master/main
-  push: {branches: ["master", "main"]}
+
+  schedule:
+    # Kazdych 6 hodin, mimo celou hodinu kvuli vytizeni GitHub Actions
+    - cron: "17 */6 * * *"
+      timezone: "Europe/Prague"
+
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - ".github/workflows/metrics.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-metrics
+  cancel-in-progress: true
+
 jobs:
-  github-metrics:
+  generate-metrics:
+    name: Generate profile metrics
     runs-on: ubuntu-latest
-    environment: 
-      name: production
-    permissions:
-      contents: write
+    timeout-minutes: 45
+
     steps:
-      - uses: lowlighter/metrics@latest
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+
+      # ------------------------------------------------------------
+      # 1. HLAVNI GITHUB STATISTIKY + ACHIEVEMENTS
+      # ------------------------------------------------------------
+
+      - name: Generate GitHub metrics
+        uses: lowlighter/metrics@latest
+        with:
+          filename: github-metrics.svg
+          output_action: none
+
           token: ${{ secrets.METRICS_TOKEN }}
+          user: GameFunns
+
+          base: header, activity, community, repositories, metadata
+
+          plugin_isocalendar: yes
+          plugin_isocalendar_duration: full-year
+
+          plugin_languages: yes
+          plugin_languages_limit: 8
+          plugin_languages_sections: most-used
+          plugin_languages_details: bytes-size, percentage
+          plugin_languages_ignored: html, css
+
+          plugin_achievements: yes
+          plugin_achievements_display: compact
+          plugin_achievements_threshold: C
+          plugin_achievements_secrets: yes
+
+          config_timezone: Europe/Prague
+          config_output: svg
+          config_display: regular
+          config_base64: yes
+          config_animations: no
+
+          optimize: css, xml
+          use_prebuilt_image: yes
+
+          retries: 3
+          retries_delay: 120
+
+          plugins_errors_fatal: yes
+
+      # ------------------------------------------------------------
+      # 2. SPOTIFY - NEDAVNO PREHRAVANE SKLADBY
+      # ------------------------------------------------------------
+
+      - name: Generate Spotify metrics
+        continue-on-error: true
+        uses: lowlighter/metrics@latest
+        with:
+          filename: music.svg
+          output_action: none
+
+          token: NOT_NEEDED
+          base: ""
+
+          plugin_music: yes
+          plugin_music_provider: spotify
+          plugin_music_mode: recent
+          plugin_music_token: ${{ secrets.SPOTIFY_TOKENS }}
+          plugin_music_limit: 4
+          plugin_music_played_at: yes
+
+          config_timezone: Europe/Prague
+          config_output: svg
+          config_display: regular
+          config_base64: yes
+          config_animations: no
+
+          optimize: css, xml
+          use_prebuilt_image: yes
+
+          retries: 3
+          retries_delay: 120
+
+          plugins_errors_fatal: yes
+
+      # ------------------------------------------------------------
+      # 3. STEAM PROFIL A HRY
+      # ------------------------------------------------------------
+
+      - name: Generate Steam metrics
+        continue-on-error: true
+        uses: lowlighter/metrics@latest
+        with:
+          filename: steam.svg
+          output_action: none
+
+          token: NOT_NEEDED
+          base: ""
+
+          plugin_steam: yes
+          plugin_steam_token: ${{ secrets.STEAM_TOKEN }}
+          plugin_steam_user: ${{ secrets.STEAM_USER_ID }}
+
+          plugin_steam_sections: player, most-played, recently-played
+          plugin_steam_games_limit: 3
+          plugin_steam_recent_games_limit: 3
+          plugin_steam_achievements_limit: 3
+          plugin_steam_playtime_threshold: 2
+
+          config_timezone: Europe/Prague
+          config_output: svg
+          config_display: regular
+          config_base64: yes
+          config_animations: no
+
+          optimize: css, xml
+          use_prebuilt_image: yes
+
+          retries: 3
+          retries_delay: 120
+
+          plugins_errors_fatal: yes
+
+      # ------------------------------------------------------------
+      # 4. 16PERSONALITIES
+      # ------------------------------------------------------------
+
+      - name: Generate personality metrics
+        continue-on-error: true
+        uses: lowlighter/metrics@latest
+        with:
+          filename: personality.svg
+          output_action: none
+
+          token: ${{ secrets.METRICS_TOKEN }}
+          base: ""
+
+          plugin_16personalities: yes
+          plugin_16personalities_url: ${{ secrets.SIXTEEN_PERSONALITIES_URL }}
+          plugin_16personalities_sections: personality, profile, traits
+          plugin_16personalities_scores: yes
+
+          config_timezone: Europe/Prague
+          config_output: svg
+          config_display: regular
+          config_base64: yes
+          config_animations: no
+
+          optimize: css, xml
+          use_prebuilt_image: yes
+
+          retries: 3
+          retries_delay: 120
+
+          plugins_errors_fatal: yes
+
+      # ------------------------------------------------------------
+      # ULOZENI VSECH USPESNE VYGENEROVANYCH SOUBORU JEDNIM COMMITEM
+      # ------------------------------------------------------------
+
+      - name: Commit generated metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin "${GITHUB_REF_NAME}"
+          git checkout -B "${GITHUB_REF_NAME}" "origin/${GITHUB_REF_NAME}"
+
+          if [ ! -d "/metrics_renders" ]; then
+            echo "Metrics output directory does not exist."
+            exit 1
+          fi
+
+          shopt -s nullglob
+          files=(/metrics_renders/*.svg)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No SVG files were generated."
+            exit 1
+          fi
+
+          sudo cp -f "${files[@]}" ./
+          sudo chown "$(id -u):$(id -g)" ./*.svg
+
+          git add github-metrics.svg music.svg steam.svg personality.svg
+
+          if git diff --cached --quiet; then
+            echo "Metrics data did not change."
+            exit 0
+          fi
+
+          git commit -m "chore: update profile metrics [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
